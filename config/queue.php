@@ -12,7 +12,7 @@ return [
             'driver' => 'database',
             'table' => 'jobs',
             'queue' => 'default',
-            'retry_after' => 900,
+            'retry_after' => 1800,
             'after_commit' => false,
         ],
     ],
