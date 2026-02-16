@@ -132,9 +132,11 @@ fi
 if [[ "${USE_SSL}" == "true" ]]; then
   APP_URL="https://${DOMAIN}"
   NGINX_SERVER_NAME="${DOMAIN}"
+  NGINX_LISTEN="listen 80;"
 else
   APP_URL="http://${SERVER_IP}"
-  NGINX_SERVER_NAME="${SERVER_IP} _"
+  NGINX_SERVER_NAME="_"
+  NGINX_LISTEN="listen 80 default_server;"
 fi
 
 set_env() {
@@ -263,7 +265,7 @@ find storage bootstrap/cache -type f -exec chmod 664 {} \;
 echo "[9/10] Configuring Nginx + PHP-FPM..."
 cat > "/etc/nginx/sites-available/${NGINX_SITE}" <<EOF
 server {
-    listen 80;
+  ${NGINX_LISTEN}
   server_name ${NGINX_SERVER_NAME};
 
     root ${APP_DIR}/public;
