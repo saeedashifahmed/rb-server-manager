@@ -80,7 +80,14 @@ class ScriptBuilder
      */
     public function installNginx(): string
     {
-        return 'export DEBIAN_FRONTEND=noninteractive && apt-get install -y nginx && systemctl enable nginx && systemctl start nginx';
+        return implode(' && ', [
+            'export DEBIAN_FRONTEND=noninteractive',
+            'dpkg --configure -a || true',
+            'apt-get install -f -y || true',
+            'apt-get install -y nginx',
+            'systemctl enable nginx',
+            'systemctl start nginx',
+        ]);
     }
 
     /**
@@ -90,6 +97,8 @@ class ScriptBuilder
     {
         return implode(' && ', [
             'export DEBIAN_FRONTEND=noninteractive',
+            'dpkg --configure -a || true',
+            'apt-get install -f -y || true',
             'if command -v mysql >/dev/null 2>&1; then echo "MySQL/MariaDB already installed"; else apt-get install -y mysql-server || apt-get install -y default-mysql-server; fi',
             'if systemctl list-unit-files | grep -q "^mysql.service"; then systemctl enable mysql && systemctl start mysql; elif systemctl list-unit-files | grep -q "^mariadb.service"; then systemctl enable mariadb && systemctl start mariadb; else echo "No mysql/mariadb systemd service found" && exit 1; fi',
         ]);
@@ -102,6 +111,8 @@ class ScriptBuilder
     {
         return implode(' && ', [
             'export DEBIAN_FRONTEND=noninteractive',
+            'dpkg --configure -a || true',
+            'apt-get install -f -y || true',
             'add-apt-repository -y ppa:ondrej/php',
             'apt-get update -y',
             'apt-get install -y php8.2-fpm php8.2-mysql php8.2-curl php8.2-gd php8.2-mbstring php8.2-xml php8.2-zip php8.2-intl php8.2-soap php8.2-bcmath php8.2-imagick',
@@ -115,7 +126,12 @@ class ScriptBuilder
      */
     public function installUtilities(): string
     {
-        return 'export DEBIAN_FRONTEND=noninteractive && apt-get install -y unzip curl software-properties-common';
+        return implode(' && ', [
+            'export DEBIAN_FRONTEND=noninteractive',
+            'dpkg --configure -a || true',
+            'apt-get install -f -y || true',
+            'apt-get install -y unzip curl software-properties-common',
+        ]);
     }
 
     /**
@@ -204,7 +220,12 @@ class ScriptBuilder
      */
     public function installCertbot(): string
     {
-        return 'export DEBIAN_FRONTEND=noninteractive && apt-get install -y certbot python3-certbot-nginx';
+        return implode(' && ', [
+            'export DEBIAN_FRONTEND=noninteractive',
+            'dpkg --configure -a || true',
+            'apt-get install -f -y || true',
+            'apt-get install -y certbot python3-certbot-nginx',
+        ]);
     }
 
     /**
