@@ -85,7 +85,11 @@ class ScriptBuilder
      */
     public function installMySQL(): string
     {
-        return 'export DEBIAN_FRONTEND=noninteractive && apt-get install -y mysql-server && systemctl enable mysql && systemctl start mysql';
+        return implode(' && ', [
+            'export DEBIAN_FRONTEND=noninteractive',
+            'if command -v mysql >/dev/null 2>&1; then echo "MySQL/MariaDB already installed"; else apt-get install -y mysql-server || apt-get install -y default-mysql-server; fi',
+            'if systemctl list-unit-files | grep -q "^mysql.service"; then systemctl enable mysql && systemctl start mysql; elif systemctl list-unit-files | grep -q "^mariadb.service"; then systemctl enable mariadb && systemctl start mariadb; else echo "No mysql/mariadb systemd service found" && exit 1; fi',
+        ]);
     }
 
     /**
