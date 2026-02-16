@@ -13,6 +13,12 @@
         <form method="POST" action="{{ route('servers.store') }}" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             @csrf
 
+            <div class="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <p class="text-sm text-blue-800">
+                    Provide at least one authentication method: <strong>SSH Private Key</strong> or <strong>SSH Password</strong>.
+                </p>
+            </div>
+
             {{-- Server Name --}}
             <div>
                 <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Server Name</label>
@@ -60,12 +66,24 @@
 
             {{-- SSH Private Key --}}
             <div>
-                <label for="ssh_private_key" class="block text-sm font-medium text-gray-700 mb-1">SSH Private Key</label>
-                <textarea id="ssh_private_key" name="ssh_private_key" rows="8" required
+                <label for="ssh_private_key" class="block text-sm font-medium text-gray-700 mb-1">SSH Private Key (optional)</label>
+                <textarea id="ssh_private_key" name="ssh_private_key" rows="8"
                           placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
                           class="w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-2.5 border font-mono text-xs">{{ old('ssh_private_key') }}</textarea>
                 <p class="mt-1 text-xs text-gray-500">Paste your full SSH private key here. It will be encrypted before storage.</p>
                 @error('ssh_private_key')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- SSH Password --}}
+            <div>
+                <label for="ssh_password" class="block text-sm font-medium text-gray-700 mb-1">SSH Password (optional)</label>
+                <input id="ssh_password" name="ssh_password" type="password" value="{{ old('ssh_password') }}"
+                       placeholder="Root or SSH user password"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-2.5 border">
+                <p class="mt-1 text-xs text-gray-500">Use this if your server uses password-based SSH login. It will be encrypted before storage.</p>
+                @error('ssh_password')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>

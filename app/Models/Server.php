@@ -18,12 +18,16 @@ class Server extends Model
         'ip_address',
         'ssh_port',
         'ssh_username',
+        'ssh_private_key',
+        'ssh_password',
         'ssh_private_key_encrypted',
+        'ssh_password_encrypted',
         'status',
     ];
 
     protected $hidden = [
         'ssh_private_key_encrypted',
+        'ssh_password_encrypted',
     ];
 
     protected $casts = [
@@ -35,17 +39,45 @@ class Server extends Model
     /**
      * Encrypt the SSH private key before storing.
      */
-    public function setSshPrivateKeyAttribute(string $value): void
+    public function setSshPrivateKeyAttribute(?string $value): void
     {
-        $this->attributes['ssh_private_key_encrypted'] = Crypt::encryptString($value);
+        $this->attributes['ssh_private_key_encrypted'] = filled($value)
+            ? Crypt::encryptString($value)
+            : null;
     }
 
     /**
      * Decrypt the SSH private key when accessing.
      */
-    public function getSshPrivateKeyAttribute(): string
+    public function getSshPrivateKeyAttribute(): ?string
     {
+        if (empty($this->attributes['ssh_private_key_encrypted'])) {
+            return null;
+        }
+
         return Crypt::decryptString($this->attributes['ssh_private_key_encrypted']);
+    }
+
+    /**
+     * Encrypt the SSH password before storing.
+     */
+    public function setSshPasswordAttribute(?string $value): void
+    {
+        $this->attributes['ssh_password_encrypted'] = filled($value)
+            ? Crypt::encryptString($value)
+            : null;
+    }
+
+    /**
+     * Decrypt the SSH password when accessing.
+     */
+    public function getSshPasswordAttribute(): ?string
+    {
+        if (empty($this->attributes['ssh_password_encrypted'])) {
+            return null;
+        }
+
+        return Crypt::decryptString($this->attributes['ssh_password_encrypted']);
     }
 
     // ── Relationships ───────────────────────────────────────────
@@ -70,5 +102,15 @@ class Server extends Model
     public function latestInstallation(): ?Installation
     {
         return $this->installations()->latest()->first();
+    }
+
+    public function hasSshPrivateKey(): bool
+    {
+        return ! empty($this->attributes['ssh_private_key_encrypted']);
+    }
+
+    public function hasSshPassword(): bool
+    {
+        return ! empty($this->attributes['ssh_password_encrypted']);
     }
 }

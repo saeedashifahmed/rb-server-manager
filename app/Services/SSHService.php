@@ -24,9 +24,18 @@ class SSHService
         $ssh = new SSH2($server->ip_address, $server->ssh_port, self::CONNECT_TIMEOUT);
         $ssh->setTimeout(self::EXEC_TIMEOUT);
 
-        $key = PublicKeyLoader::load($server->ssh_private_key);
+        $authenticated = false;
 
-        if (! $ssh->login($server->ssh_username, $key)) {
+        if ($server->hasSshPrivateKey()) {
+            $key = PublicKeyLoader::load($server->ssh_private_key);
+            $authenticated = $ssh->login($server->ssh_username, $key);
+        } elseif ($server->hasSshPassword()) {
+            $authenticated = $ssh->login($server->ssh_username, $server->ssh_password);
+        } else {
+            throw new RuntimeException('Server has no SSH authentication method configured.');
+        }
+
+        if (! $authenticated) {
             throw new RuntimeException(
                 "SSH authentication failed for {$server->ssh_username}@{$server->ip_address}:{$server->ssh_port}"
             );

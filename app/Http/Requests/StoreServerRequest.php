@@ -18,7 +18,8 @@ class StoreServerRequest extends FormRequest
             'ip_address'      => ['required', 'ip'],
             'ssh_port'        => ['required', 'integer', 'min:1', 'max:65535'],
             'ssh_username'    => ['required', 'string', 'max:64', 'regex:/^[a-zA-Z0-9_\-]+$/'],
-            'ssh_private_key' => ['required', 'string', 'min:50'],
+            'ssh_private_key' => ['nullable', 'string', 'min:50', 'required_without:ssh_password'],
+            'ssh_password'    => ['nullable', 'string', 'min:4', 'max:255', 'required_without:ssh_private_key'],
         ];
     }
 
@@ -30,6 +31,9 @@ class StoreServerRequest extends FormRequest
             'ssh_port.max'           => 'SSH port must be between 1 and 65535.',
             'ssh_username.regex'     => 'SSH username may only contain letters, numbers, hyphens, and underscores.',
             'ssh_private_key.min'    => 'The SSH private key appears to be invalid.',
+            'ssh_private_key.required_without' => 'Provide either an SSH private key or an SSH password.',
+            'ssh_password.required_without'    => 'Provide either an SSH private key or an SSH password.',
+            'ssh_password.min'                 => 'SSH password must be at least 4 characters.',
         ];
     }
 }

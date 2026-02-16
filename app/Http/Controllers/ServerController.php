@@ -45,7 +45,8 @@ class ServerController extends Controller
             'ip_address'  => $validated['ip_address'],
             'ssh_port'    => $validated['ssh_port'],
             'ssh_username'=> $validated['ssh_username'],
-            'ssh_private_key' => $validated['ssh_private_key'], // Encrypted via mutator
+            'ssh_private_key' => $validated['ssh_private_key'] ?? null,
+            'ssh_password'    => $validated['ssh_password'] ?? null,
         ]);
 
         return redirect()
