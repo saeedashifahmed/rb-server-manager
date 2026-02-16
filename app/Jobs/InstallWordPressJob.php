@@ -25,9 +25,9 @@ class InstallWordPressJob implements ShouldQueue
     public int $tries = 1;
 
     /**
-     * Maximum execution time in seconds (15 minutes).
+     * Maximum execution time in seconds (25 minutes — long apt operations can be slow).
      */
-    public int $timeout = 900;
+    public int $timeout = 1500;
 
     public function __construct(
         private readonly int $installationId,
@@ -55,39 +55,50 @@ class InstallWordPressJob implements ShouldQueue
 
         try {
             // Connect to server
-            $installation->markStep('Connecting to server', 2);
+            $installation->markStep('Connecting to server', 1);
             $ssh->connect($server);
             $installation->appendLog("Connected to {$server->ip_address}:{$server->ssh_port}");
 
-            // Build scripts
+            // Detect PHP version preference
+            $phpVersion = $installation->php_version ?? ScriptBuilder::DEFAULT_PHP_VERSION;
+
+            // Build scripts with the selected PHP version
             $builder = new ScriptBuilder(
                 domain: $installation->domain,
                 adminEmail: $installation->admin_email,
                 siteTitle: $installation->site_title,
+                phpVersion: $phpVersion,
             );
 
-            // Store DB credentials on the installation record
+            // Store DB credentials and resolved PHP version on the installation record
             $installation->update([
-                'wp_db_name' => $builder->getDbName(),
-                'wp_db_user' => $builder->getDbUser(),
+                'wp_db_name'  => $builder->getDbName(),
+                'wp_db_user'  => $builder->getDbUser(),
+                'php_version' => $builder->getPhpVersion(),
             ]);
+
+            $installation->appendLog("Target PHP version: {$builder->getPhpVersion()}");
 
             // Execute each step in sequence
             $steps = ScriptBuilder::getSteps();
+            $totalSteps = count($steps);
 
-            foreach ($steps as $step) {
-                $installation->markStep($step['name'], $step['progress']);
+            foreach ($steps as $index => $step) {
+                $stepNumber = $index + 1;
+                $installation->markStep("{$step['name']} ({$stepNumber}/{$totalSteps})", $step['progress']);
 
                 try {
                     $command = $builder->{$step['method']}();
-                    $output = $ssh->executeOrFail($command);
+                    $stepTimeout = $step['timeout'] ?? 300;
+
+                    $output = $ssh->executeOrFail($command, $stepTimeout);
 
                     // Log truncated output to avoid bloating the DB
                     $truncatedOutput = mb_substr($output, 0, 2000);
                     $installation->appendLog("✓ {$step['name']}\n{$truncatedOutput}");
                 } catch (RuntimeException $e) {
                     throw new RuntimeException(
-                        "Failed at step '{$step['name']}': " . $e->getMessage()
+                        "Failed at step '{$step['name']}' ({$stepNumber}/{$totalSteps}): " . $e->getMessage()
                     );
                 }
             }
@@ -96,7 +107,10 @@ class InstallWordPressJob implements ShouldQueue
             $wpAdminUrl = $builder->getWpAdminUrl();
             $installation->markSuccess($wpAdminUrl);
 
-            Log::info("InstallWordPressJob: Installation #{$this->installationId} completed successfully.");
+            Log::info("InstallWordPressJob: Installation #{$this->installationId} completed successfully.", [
+                'domain'      => $installation->domain,
+                'php_version' => $builder->getPhpVersion(),
+            ]);
 
         } catch (Throwable $e) {
             $errorMessage = $e->getMessage();

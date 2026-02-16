@@ -78,6 +78,24 @@
                     @enderror
                 </div>
 
+                {{-- PHP Version --}}
+                <div>
+                    <label for="php_version" class="block text-sm font-medium text-gray-700 mb-1">PHP Version</label>
+                    <select id="php_version" name="php_version"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 px-4 py-2.5 border">
+                        @foreach(\App\Services\ScriptBuilder::SUPPORTED_PHP_VERSIONS as $version)
+                            <option value="{{ $version }}"
+                                    {{ old('php_version', \App\Services\ScriptBuilder::DEFAULT_PHP_VERSION) === $version ? 'selected' : '' }}>
+                                PHP {{ $version }}{{ $version === \App\Services\ScriptBuilder::DEFAULT_PHP_VERSION ? ' (recommended)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Select the PHP version for your WordPress installation. PHP {{ \App\Services\ScriptBuilder::DEFAULT_PHP_VERSION }} is recommended for the best compatibility.</p>
+                    @error('php_version')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 {{-- Info Box --}}
                 <div class="rounded-lg bg-blue-50 border border-blue-200 p-4">
                     <div class="flex">
@@ -88,12 +106,16 @@
                             <h3 class="text-sm font-medium text-blue-800">What will be installed</h3>
                             <ul class="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
                                 <li>Nginx web server</li>
-                                <li>MySQL database server</li>
-                                <li>PHP 8.2 with required extensions</li>
+                                <li>MySQL / MariaDB database server</li>
+                                <li>PHP with all WordPress-required extensions</li>
                                 <li>Latest WordPress from wordpress.org</li>
                                 <li>Let's Encrypt SSL certificate with auto-renewal</li>
                                 <li>Security-hardened wp-config.php</li>
+                                <li>Optimized PHP-FPM &amp; Nginx configuration</li>
                             </ul>
+                            <p class="mt-3 text-xs text-blue-600">
+                                <strong>Supported OS:</strong> Ubuntu 20.04, 22.04, 24.04 &amp; Debian 11, 12
+                            </p>
                         </div>
                     </div>
                 </div>

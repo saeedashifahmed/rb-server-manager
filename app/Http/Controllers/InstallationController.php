@@ -55,6 +55,7 @@ class InstallationController extends Controller
             'domain'      => strtolower($validated['domain']),
             'admin_email' => $validated['admin_email'],
             'site_title'  => $validated['site_title'] ?? 'My WordPress Site',
+            'php_version' => $validated['php_version'] ?? \App\Services\ScriptBuilder::DEFAULT_PHP_VERSION,
             'status'      => Installation::STATUS_PENDING,
         ]);
 
@@ -93,6 +94,7 @@ class InstallationController extends Controller
             'wp_admin_url'  => $installation->wp_admin_url,
             'error_message' => $installation->error_message,
             'log'           => $installation->log,
+            'php_version'   => $installation->php_version,
             'started_at'    => $installation->started_at?->diffForHumans(),
             'completed_at'  => $installation->completed_at?->diffForHumans(),
         ]);

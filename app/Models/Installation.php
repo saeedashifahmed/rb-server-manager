@@ -16,6 +16,7 @@ class Installation extends Model
         'domain',
         'admin_email',
         'site_title',
+        'php_version',
         'status',
         'current_step',
         'progress',

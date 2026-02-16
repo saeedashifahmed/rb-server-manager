@@ -43,7 +43,7 @@
         </div>
 
         {{-- Step Indicators --}}
-        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-4">
+        <div class="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-4">
             <template x-for="step in steps" :key="step.name">
                 <div class="text-center">
                     <div class="mx-auto w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition"
@@ -112,10 +112,14 @@
     </div>
 
     {{-- Installation Details --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 p-5">
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Domain</p>
             <p class="text-sm font-semibold text-gray-900">{{ $installation->domain }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">PHP Version</p>
+            <p class="text-sm font-semibold text-gray-900">{{ $installation->php_version ?? '—' }}</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-5">
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Database</p>
@@ -155,21 +159,22 @@ function installationProgress() {
         showLog: false,
         polling: null,
         steps: [
-            { num: 1, short: 'System', progress: 5 },
-            { num: 2, short: 'Nginx', progress: 12 },
-            { num: 3, short: 'MySQL', progress: 22 },
-            { num: 4, short: 'PHP', progress: 35 },
-            { num: 5, short: 'Tools', progress: 40 },
-            { num: 6, short: 'Secure DB', progress: 45 },
-            { num: 7, short: 'Create DB', progress: 50 },
-            { num: 8, short: 'WordPress', progress: 58 },
-            { num: 9, short: 'Config', progress: 63 },
+            { num: 1, short: 'Preflight', progress: 2 },
+            { num: 2, short: 'System', progress: 8 },
+            { num: 3, short: 'Nginx', progress: 15 },
+            { num: 4, short: 'MySQL', progress: 25 },
+            { num: 5, short: 'PHP', progress: 38 },
+            { num: 6, short: 'Secure DB', progress: 42 },
+            { num: 7, short: 'Create DB', progress: 48 },
+            { num: 8, short: 'WordPress', progress: 56 },
+            { num: 9, short: 'Config', progress: 62 },
             { num: 10, short: 'Perms', progress: 68 },
-            { num: 11, short: 'Nginx Cfg', progress: 75 },
-            { num: 12, short: 'Restart', progress: 80 },
-            { num: 13, short: 'Certbot', progress: 85 },
+            { num: 11, short: 'Nginx Cfg', progress: 74 },
+            { num: 12, short: 'Restart', progress: 78 },
+            { num: 13, short: 'Certbot', progress: 84 },
             { num: 14, short: 'SSL', progress: 92 },
-            { num: 15, short: 'Auto-Renew', progress: 98 },
+            { num: 15, short: 'Auto-Renew', progress: 96 },
+            { num: 16, short: 'Verify', progress: 99 },
         ],
 
         get statusBadge() {
