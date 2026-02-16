@@ -69,7 +69,10 @@ class ScriptBuilder
      */
     public function updateSystem(): string
     {
-        return 'export DEBIAN_FRONTEND=noninteractive && apt-get update -y && apt-get upgrade -y';
+        return implode(' && ', [
+            'export DEBIAN_FRONTEND=noninteractive',
+            'apt-get update -y || (sleep 5 && apt-get update -y)',
+        ]);
     }
 
     /**
