@@ -12,17 +12,21 @@ DB_USER="rb_manager"
 DB_PASS=""
 DOMAIN=""
 LETSENCRYPT_EMAIL=""
+SERVER_IP=""
 
 usage() {
   cat <<'EOF'
 Usage:
-  sudo bash launch-ubuntu.sh --domain example.com --email admin@example.com [options]
+  sudo bash launch-ubuntu.sh [options]
 
-Required:
-  --domain               Domain pointed to this server (A record already set)
-  --email                Let's Encrypt email
+Modes:
+  1) IP-only (no SSL): provide --ip or leave empty to auto-detect
+  2) Domain + SSL: provide both --domain and --email
 
 Optional:
+  --ip                   Public server IP for APP_URL (default: auto-detect)
+  --domain               Domain pointed to this server (A record already set)
+  --email                Let's Encrypt email (required only with --domain)
   --repo-url             Git repository URL
   --branch               Git branch (default: main)
   --app-dir              Install directory (default: /var/www/rb-server-manager)
@@ -31,6 +35,9 @@ Optional:
   --db-pass              MySQL password (default: auto-generated)
 
 Example:
+  sudo bash launch-ubuntu.sh \
+    --ip 203.0.113.10
+
   sudo bash launch-ubuntu.sh \
     --domain app.example.com \
     --email ops@example.com
@@ -45,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --email)
       LETSENCRYPT_EMAIL="$2"
+      shift 2
+      ;;
+    --ip)
+      SERVER_IP="$2"
       shift 2
       ;;
     --repo-url)
@@ -88,10 +99,15 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-if [[ -z "${DOMAIN}" || -z "${LETSENCRYPT_EMAIL}" ]]; then
-  echo "--domain and --email are required."
+if [[ -n "${DOMAIN}" && -z "${LETSENCRYPT_EMAIL}" ]]; then
+  echo "When --domain is provided, --email is also required for SSL."
   usage
   exit 1
+fi
+
+USE_SSL="false"
+if [[ -n "${DOMAIN}" && -n "${LETSENCRYPT_EMAIL}" ]]; then
+  USE_SSL="true"
 fi
 
 if [[ -z "${DB_PASS}" ]]; then
@@ -103,6 +119,23 @@ PHP_FPM_SERVICE="php${PHP_VERSION}-fpm"
 PHP_FPM_SOCK="/run/php/php${PHP_VERSION}-fpm.sock"
 NGINX_SITE="rb-server-manager"
 PROJECT_NAME="RB Server Manager"
+
+if [[ "${USE_SSL}" == "false" && -z "${SERVER_IP}" ]]; then
+  SERVER_IP="$(hostname -I | awk '{print $1}')"
+fi
+
+if [[ "${USE_SSL}" == "false" && -z "${SERVER_IP}" ]]; then
+  echo "Could not auto-detect server IP. Pass it explicitly with --ip."
+  exit 1
+fi
+
+if [[ "${USE_SSL}" == "true" ]]; then
+  APP_URL="https://${DOMAIN}"
+  NGINX_SERVER_NAME="${DOMAIN}"
+else
+  APP_URL="http://${SERVER_IP}"
+  NGINX_SERVER_NAME="${SERVER_IP} _"
+fi
 
 set_env() {
   local key="$1"
@@ -134,9 +167,11 @@ apt-get install -y \
   git \
   nginx \
   mysql-server \
-  supervisor \
-  certbot \
-  python3-certbot-nginx
+  supervisor
+
+if [[ "${USE_SSL}" == "true" ]]; then
+  apt-get install -y certbot python3-certbot-nginx
+fi
 
 if ! add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1; then
   echo "[WARN] Could not add ondrej/php PPA (may already exist)."
@@ -195,7 +230,7 @@ fi
 set_env "APP_NAME" "\"${PROJECT_NAME}\""
 set_env "APP_ENV" "production"
 set_env "APP_DEBUG" "false"
-set_env "APP_URL" "https://${DOMAIN}"
+set_env "APP_URL" "${APP_URL}"
 
 set_env "DB_CONNECTION" "mysql"
 set_env "DB_HOST" "127.0.0.1"
@@ -229,7 +264,7 @@ echo "[9/10] Configuring Nginx + PHP-FPM..."
 cat > "/etc/nginx/sites-available/${NGINX_SITE}" <<EOF
 server {
     listen 80;
-    server_name ${DOMAIN};
+  server_name ${NGINX_SERVER_NAME};
 
     root ${APP_DIR}/public;
     index index.php index.html;
@@ -265,7 +300,7 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
-echo "[10/10] Configuring queue workers + SSL..."
+echo "[10/10] Configuring queue workers..."
 cat > /etc/supervisor/conf.d/rb-server-manager-worker.conf <<EOF
 [program:rb-server-manager-worker]
 process_name=%(program_name)s_%(process_num)02d
@@ -286,12 +321,15 @@ supervisorctl reread
 supervisorctl update
 supervisorctl restart rb-server-manager-worker:*
 
-certbot --nginx \
-  --non-interactive \
-  --agree-tos \
-  --redirect \
-  --email "${LETSENCRYPT_EMAIL}" \
-  -d "${DOMAIN}"
+if [[ "${USE_SSL}" == "true" ]]; then
+  echo "Applying Let's Encrypt SSL certificate..."
+  certbot --nginx \
+    --non-interactive \
+    --agree-tos \
+    --redirect \
+    --email "${LETSENCRYPT_EMAIL}" \
+    -d "${DOMAIN}"
+fi
 
 systemctl reload nginx
 
@@ -299,7 +337,7 @@ echo
 echo "============================================="
 echo "${PROJECT_NAME} installation completed"
 echo "============================================="
-echo "App URL: https://${DOMAIN}"
+echo "App URL: ${APP_URL}"
 echo "Project dir: ${APP_DIR}"
 echo "DB name: ${DB_NAME}"
 echo "DB user: ${DB_USER}"
